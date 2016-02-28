@@ -79,10 +79,17 @@ def show_all_users():
 
 @app.route('/skills', methods=['GET'])
 def show_all_skills():
-    cur = g.db.execute('SELECT * FROM skills')
+    cur = g.db.execute('SELECT * FROM Skills')
     entries = cur.fetchall()
     print str(entries).strip('[]')
     return str(entries).strip('[]')
+
+@app.route('/user/<userid>')
+def show_user(userid):
+    print userid
+    cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
+    print str(cur).strip('[]')
+    return str(cur).strip('[]')
 
 def add_users(file):
     with open(file, "r") as f:
