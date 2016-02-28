@@ -11,6 +11,7 @@ import json
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 from contextlib import closing
+import unicodedata
 
 #configuration
 DATABASE = '/database/htn.db'
@@ -84,17 +85,24 @@ def show_all_skills():
     print str(entries).strip('[]')
     return str(entries).strip('[]')
 
-@app.route('/user/<userid>', methods=['GET', 'PUT'])
+@app.route('/user/<userid>', methods=['GET', 'PUT', 'POST'])
 def show_user(userid):
-    if request.method == 'PUT':
-        update_user(userid, request.form["json"])
+    cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
+    print str(cur).strip('[]')
+    if request.method == 'POST':
+        print "HERE"
+        print type(request.form["json"])
+        info = request.form["json"]
+        encoded = ("'"+request.form["json"]+"'").encode('ascii', 'ignore')
+        print type(encoded)
+        update_user(userid, info)
     else:
         print userid
         cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
         print str(cur).strip('[]')
         #return str(cur).strip('[]')
         return render_template('user.html', info=str(cur).strip('[]'))
-    return render_template    
+    return render_template('user.html', info=str(cur).strip('[]'))
 
 def update_user(userid, info):
     """
@@ -102,12 +110,19 @@ def update_user(userid, info):
     """
     ## Add in a query ask if time
     db = get_db()
-    data = json.load(info)
+    data = json.loads(info)
+
+    # getting list of columns in Person table
+    db.row_factory = sqlite3.Row
+    cursor = db.execute('SELECT * FROM Person')
+    row = cursor.fetchone()
+    columns = row.keys()
+
     for key in data:
-        db.execute('''UPDATE Person SET ? = ? WHERE id = ?''', (key, data[key], userid))
+        if key in columns:
+            db.execute('''UPDATE Person SET %s = ? WHERE id = ?''' % key, (data[key], userid))
 
     db.commit()
-    return redirect(url_for('user'))
 
 
 
@@ -143,22 +158,6 @@ def parse_data(data):
             db.execute("INSERT INTO Skills (name, rating, person) VALUES (?, ?, ?)", (skill["name"], skill["rating"], pk[0]))
 
         db.commit()
-
-        
-
-
-# @app.route('/user/', methods=['GET', 'PUT'])
-# def show_user():
-#     cur = db.execute('select title, text from entries order by id desc')
-#     entries = cur.fetchall()
-#     return render_template('show_entries.html', entries=entries)
-
-
-# @app.cli.command('initdb')
-# def initdb_command():
-#     """Creates the database tables."""
-#     init_db()
-#     print('Initialized the database.')
 
 
 
