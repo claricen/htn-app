@@ -14,7 +14,7 @@ from contextlib import closing
 
 #configuration
 DATABASE = '/database/htn.db'
-DEBUG = True
+DEBUG = False
 SECRET_KEY='development key',
 USERNAME='admin',
 PASSWORD='default'
@@ -26,7 +26,7 @@ app.config.from_object(__name__)
 # Load default config and override config from an environment variable
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'htn.db'),
-    DEBUG=True,
+    DEBUG=False,
     SECRET_KEY='development key',
     USERNAME='admin',
     PASSWORD='default'
@@ -65,10 +65,12 @@ def teardown_request(exception):
     if db is not None:
         db.close()
 
+## Routes
+
 @app.route('/')
 def show_index():
     db = get_db()
-    return "Hi, this is my backend dev application for Hack the North 2016 :)"
+    return render_template('index.html')
 
 @app.route('/users', methods=['GET'])
 def show_all_users():
@@ -114,6 +116,7 @@ def query_db(query, args=(), one=False):
     return (r[0] if r else None) if one else r
 
 
+## Pre-loading data
 
 def add_users(file):
     with open(file, "r") as f:
@@ -128,7 +131,7 @@ def parse_data(data):
     
     userdata = None
 
-    for user in data[:3]:
+    for user in data:
         name = user["name"]
         email = user["email"]
         company = user["company"]
@@ -148,6 +151,7 @@ def parse_data(data):
         db.commit()
 
 
+## Run the app
 
 if __name__ == '__main__':
     init_db()
