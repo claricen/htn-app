@@ -11,7 +11,6 @@ import json
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 from contextlib import closing
-import unicodedata
 
 #configuration
 DATABASE = '/database/htn.db'
@@ -73,35 +72,17 @@ def show_index():
 
 @app.route('/users', methods=['GET'])
 def show_all_users():
-    cur = g.db.execute('SELECT * FROM Person')
-    entries = cur.fetchall()
-    print str(entries).strip('[]')
-    return str(entries).strip('[]')
-
-@app.route('/skills', methods=['GET'])
-def show_all_skills():
-    cur = g.db.execute('SELECT * FROM Skills')
-    entries = cur.fetchall()
-    print str(entries).strip('[]')
-    return str(entries).strip('[]')
+    entries = query_db("SELECT * FROM Person, Skills WHERE Person.id = Skills.person")
+    return str(entries)
 
 @app.route('/user/<userid>', methods=['GET', 'PUT', 'POST'])
 def show_user(userid):
-    cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
-    print str(cur).strip('[]')
+    #cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
+    cur = query_db("SELECT * FROM Person, Skills WHERE Person.id = ? AND Person.id = Skills.person", (userid,))
+    print "CUR: ", cur
     if request.method == 'POST':
-        print "HERE"
-        print type(request.form["json"])
         info = request.form["json"]
-        encoded = ("'"+request.form["json"]+"'").encode('ascii', 'ignore')
-        print type(encoded)
         update_user(userid, info)
-    else:
-        print userid
-        cur = g.db.execute("SELECT * FROM Person, Skills WHERE Person.id = '%s' AND Person.id = Skills.person" % userid).fetchone()
-        print str(cur).strip('[]')
-        #return str(cur).strip('[]')
-        return render_template('user.html', info=str(cur).strip('[]'))
     return render_template('user.html', info=str(cur).strip('[]'))
 
 def update_user(userid, info):
@@ -124,6 +105,14 @@ def update_user(userid, info):
 
     db.commit()
 
+def query_db(query, args=(), one=False):
+    cur = get_db().cursor()
+    cur.execute(query, args)
+    r = [dict((cur.description[i][0], value) \
+               for i, value in enumerate(row)) for row in cur.fetchall()]
+    cur.connection.close()
+    return (r[0] if r else None) if one else r
+
 
 
 def add_users(file):
@@ -138,7 +127,6 @@ def parse_data(data):
     """
     
     userdata = None
-    primary_key = 0 ##change this later?
 
     for user in data[:3]:
         name = user["name"]
@@ -155,7 +143,7 @@ def parse_data(data):
                      VALUES (?, ?, ?, ?, ?, ?, ?)", (name, email, company, latitude, longitude, phone, picture))
         for skill in skills:
             pk = db.execute("SELECT id FROM Person WHERE email = '%s'" % email).fetchone()
-            db.execute("INSERT INTO Skills (name, rating, person) VALUES (?, ?, ?)", (skill["name"], skill["rating"], pk[0]))
+            db.execute("INSERT INTO Skills (skill, rating, person) VALUES (?, ?, ?)", (skill["name"], skill["rating"], pk[0]))
 
         db.commit()
 

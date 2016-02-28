@@ -13,7 +13,7 @@ create table Person (
 drop table if exists Skills;
 create table Skills (
   id integer primary key,
-  name text not null,
+  skill text not null,
   rating real not null,
   person integer not null,
   FOREIGN KEY(person) REFERENCES Person(id)
