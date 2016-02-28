@@ -12,8 +12,10 @@ create table Person (
 
 drop table if exists Skills;
 create table Skills (
-  name text primary key,
+  id integer primary key,
+  name text not null,
   rating real not null,
-  person integer not null
+  person integer not null,
+  FOREIGN KEY(person) REFERENCES Person(id)
 );
 

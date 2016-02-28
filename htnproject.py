@@ -77,6 +77,13 @@ def show_all_users():
     print str(entries).strip('[]')
     return str(entries).strip('[]')
 
+@app.route('/skills', methods=['GET'])
+def show_all_skills():
+    cur = g.db.execute('SELECT * FROM skills')
+    entries = cur.fetchall()
+    print str(entries).strip('[]')
+    return str(entries).strip('[]')
+
 def add_users(file):
     with open(file, "r") as f:
         data = json.load(f)
@@ -99,10 +106,15 @@ def parse_data(data):
         longitude = user["longitude"]
         phone = user["phone"]
         picture = user["picture"]
+        skills = user["skills"]
 
         db = get_db()
         db.execute("INSERT INTO Person (name, email, company, latitude, longitude, phone, picture) \
                      VALUES (?, ?, ?, ?, ?, ?, ?)", (name, email, company, latitude, longitude, phone, picture))
+        for skill in skills:
+            pk = db.execute("SELECT id FROM Person WHERE email = '%s'" % email).fetchone()
+            db.execute("INSERT INTO Skills (name, rating, person) VALUES (?, ?, ?)", (skill["name"], skill["rating"], pk[0]))
+
         db.commit()
 
         
