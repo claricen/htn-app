@@ -7,6 +7,7 @@
 
 import os
 import sqlite3
+import json
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 from contextlib import closing
@@ -36,6 +37,7 @@ app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 def connect_db():
     """Connects to the specific database."""
     rv = sqlite3.connect(app.config['DATABASE'])
+    print "Opened database successfully"
     return rv
 
 def init_db():
@@ -70,29 +72,47 @@ def show_index():
 
 @app.route('/users', methods=['GET'])
 def show_all_users():
-    cur = db.execute('SELECT Person.name, text from Person')
-    entries = cur.fetchone()
-    return entries
+    cur = g.db.execute('SELECT * FROM Person')
+    entries = cur.fetchall()
+    print str(entries).strip('[]')
+    return str(entries).strip('[]')
+
+def add_users(file):
+    with open(file, "r") as f:
+        data = json.load(f)
+        parse_data(data)
+
+def parse_data(data):
+    """
+    Args:
+        data: a dictionary from json.load of user data
+    """
+    
+    userdata = None
+    primary_key = 0 ##change this later?
+
+    for user in data[:3]:
+        name = user["name"]
+        email = user["email"]
+        company = user["company"]
+        latitude = user["latitude"]
+        longitude = user["longitude"]
+        phone = user["phone"]
+        picture = user["picture"]
+
+        db = get_db()
+        db.execute("INSERT INTO Person (name, email, company, latitude, longitude, phone, picture) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?)", (name, email, company, latitude, longitude, phone, picture))
+        db.commit()
+
+        
+
 
 # @app.route('/user/', methods=['GET', 'PUT'])
 # def show_user():
 #     cur = db.execute('select title, text from entries order by id desc')
 #     entries = cur.fetchall()
 #     return render_template('show_entries.html', entries=entries)
-
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     error = None
-#     if request.method == 'POST':
-#         if request.form['username'] != app.config['USERNAME']:
-#             error = 'Invalid username'
-#         elif request.form['password'] != app.config['PASSWORD']:
-#             error = 'Invalid password'
-#         else:
-#             session['logged_in'] = True
-#             flash('You were logged in')
-#             return redirect(url_for('show_entries'))
-#     return render_template('login.html', error=error)
 
 
 # @app.cli.command('initdb')
@@ -146,4 +166,7 @@ def show_all_users():
 #     return redirect(url_for('show_entries'))
 
 if __name__ == '__main__':
-  app.run()
+    init_db()
+    with app.app_context():
+        add_users('uploader/users.json')
+    app.run()

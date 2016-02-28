@@ -4,6 +4,11 @@
 import sys
 import json
 
+import sqlite3
+from contextlib import closing
+
+#from htnproject import connect_db, init_db, get_db, before_request, teardown_request
+
 class UserUploader(object):
 	""" 
 	Takes a json file of specified user info and puts it into a class for uploading to database
@@ -26,10 +31,18 @@ class UserUploader(object):
 			data: a dictionary from json.load of user data
 		"""
 		userdata = None
+		primary_key = 0 ##change this later?
 
-		for user in data[:1]:
+		for user in data[:3]:
+			print user, ('\n')
+			#return user ## dictionary with data
 
-			for key in user:
+	def get_pk(self):
+		"""
+		The primary key is an integer identifying a certain user. Returns the number of users in the database.
+		"""
+		pass
+
 				
 
 	def create_user(self, userdata):

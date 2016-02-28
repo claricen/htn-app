@@ -1,6 +1,6 @@
 drop table if exists Person;
 create table Person (
-  id integer primary key autoincrement,
+  id integer primary key,
   name text not null,
   email text not null,
   company text not null,
